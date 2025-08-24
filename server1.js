@@ -4,12 +4,15 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
+// ✅ MySQL connection
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'abhinav 12',  // your root password here
-    database: 'barcode_app'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306
 });
 
 connection.connect(err => {
@@ -20,6 +23,12 @@ connection.connect(err => {
     console.log('✅ Connected to MySQL Database');
 });
 
+// ✅ Root route (for Render health check + browser test)
+app.get('/', (req, res) => {
+    res.send('✅ BC Scanner backend is running successfully!');
+});
+
+// ✅ API: Get product details by barcode
 app.get('/get-product', (req, res) => {
     const barcode = req.query.barcode;
 
@@ -45,6 +54,8 @@ app.get('/get-product', (req, res) => {
     });
 });
 
-app.listen(3002, () => {
-    console.log('🚀 API running at http://localhost:3002');
+// ✅ Server listen
+const PORT = process.env.PORT || 3002;
+app.listen(PORT, () => {
+    console.log(`🚀 API running at http://localhost:${PORT}`);
 });
