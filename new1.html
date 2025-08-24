@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --card-color: white;
+            --shadow-color: rgba(0,0,0,0.1);
+            --accent-color: #04AA6D;
+        }
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #f0f0f0;
+            --card-color: #1e1e1e;
+            --shadow-color: rgba(255,255,255,0.05);
+            --accent-color: #00C896;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            margin: 20px;
+            text-align: center;
+            color: var(--text-color);
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+        h1, h2 {
+            color: var(--text-color);
+        }
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            height: 600px;
+            margin: 20px auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            background: black;
+        }
+        #overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            pointer-events: none;
+        }
+        #overlay button {
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+        }
+        .btn1 { background: var(--accent-color); color: white; }
+        .btn1:hover { background: #028a59; }
+        .btn2 { background: #e63946; color: white; }
+        .btn2:hover { background: #c0303c; }
+        .btn3 { background: #3a86ff; color: white; }
+        .btn3:hover { background: #265ecf; }
+        .product-list {
+            margin-top: 20px;
+            border-top: 2px solid var(--text-color);
+            padding-top: 10px;
+        }
+        .product-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--card-color);
+            box-shadow: 0 4px 10px var(--shadow-color);
+            margin-bottom: 10px;
+            transition: background 0.5s ease, box-shadow 0.5s ease;
+            position: relative;
+        }
+        .product-item input {
+            width: 60px;
+            text-align: center;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        h2 span { color: var(--accent-color); }
+        .dark-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--card-color);
+            border-radius: 50%;
+            border: 2px solid var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.4s ease, background 0.4s ease;
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+        .dark-toggle:hover {
+            transform: rotate(360deg) scale(1.1);
+            background: var(--accent-color);
+            color: white;
+        }
+        .dark-toggle::before {
+            content: '🌙';
+            font-size: 24px;
+            transition: all 0.4s ease;
+        }
+        body.dark-mode .dark-toggle::before {
+            content: '☀️';
+        }
+        .btn2:active, .btn1:active, .btn3:active { transform: scale(0.90); }
+        .site-footer {
+            text-align: center;
+            padding: 15px 0;
+            color: #000000;
+            font-size: 14px;
+            bottom: 0;
+            width: 100%;
+        }
+        .dark-mode .site-footer { color: #ffffff; }
+        .remove-btn {
+            background: transparent;
+            color: #e63946;
+            font-size: 18px;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .remove-btn:hover {
+            background: #ffcccc;
+            color: #ffffff;
+        }
+        .download-btn, .refresh-btn {
+            
+            color: rgb(0, 0, 0);
+            
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 30px;
+        }
+        .refresh-btn:hover { 
+            transform: scale(1.25);
+         }
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .download-btn:hover{
+            transform: scale(1.5);
+            
+        }
+        
+        
+    </style>
+</head>
+<body>
+
+    <div class="dark-toggle" onclick="toggleDarkMode()"></div>
+
+    <h1>Barcode Scanner</h1>
+
+    <div id="scanner-container">
+        <div id="interactive" class="viewport"></div>
+        <div id="overlay">
+            <button class="btn1" onclick="startScanner()">📷 Start Scan</button>
+            <button class="btn2" onclick="stopScanner()">⏹ Stop Scan</button>
+            <button id="next-btn" class="btn3" onclick="goToNextPage()">➡ back to main page</button>
+        </div>
+    </div>
+
+    <h2>Scanned Products
+        <div class="btn-container">
+            <button class="download-btn" onclick="downloadPDF()">⬇</button>
+            <button class="refresh-btn" onclick="refreshProductList()">🔄</button>
+        </div>
+    </h2>
+
+    <div class="product-list" id="productList"></div>
+    <h2>Total MRP: ₹<span id="totalMrp">0</span></h2>
+
+    <audio id="beepSound" src="store-scanner-beep-90395.mp3"></audio>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 Barcode Scanner. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        let products = [];
+        let lastScannedCode = "";
+        let scannerActive = false;
+        let scanningPaused = false;
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+
+
+        async function handleScan(barcode) {
+            if (!barcode || scanningPaused || barcode === lastScannedCode || !scannerActive) return;
+            lastScannedCode = barcode;
+            scanningPaused = true;
+            document.getElementById("beepSound").play();
+
+            try {
+                const response = await fetch(`http://localhost:3002/get-product?barcode=${barcode}`);
+                const data = await response.json();
+                if (data && data.product_name) {
+                    let existingProduct = products.find(p => p.barcode === barcode);
+                    if (existingProduct) {
+                        existingProduct.quantity += 1;
+                    } else {
+                        products.push({
+                            barcode: barcode,
+                            name: data.product_name,
+                            quantity: 1,
+                            mrp: data.mrp
+                        });
+                    }
+                    updateProductList();
+                } else {
+                    alert("Product not found in the database.");
+                }
+            } catch (error) {
+                console.error("Error fetching product from backend:", error);
+                alert("Failed to fetch product details.");
+            }
+
+            setTimeout(() => {
+                scanningPaused = false;
+                lastScannedCode = "";
+            }, 1000);
+        }
+
+        function updateProductList() {
+            const productList = document.getElementById("productList");
+            const totalMrpElem = document.getElementById("totalMrp");
+            productList.innerHTML = "";
+            let totalMrp = 0;
+            products.forEach((p, index) => {
+                totalMrp += p.mrp * p.quantity;
+                const productItem = document.createElement("div");
+                productItem.className = "product-item";
+                productItem.style.position = "relative";
+                let selectHTML = `<select onchange="updateQuantity(${index}, this.value)">`;
+                for (let i = 1; i <= 50; i++) {
+                    selectHTML += `<option value="${i}" ${p.quantity === i ? "selected" : ""}>${i}</option>`;
+                }
+                selectHTML += `</select>`;
+                productItem.innerHTML = `
+                    <span>${p.name}</span>
+                    ${selectHTML}
+                    <span>₹<span id="mrp-${index}">${p.mrp * p.quantity}</span></span>
+                    <button class="remove-btn" onclick="removeProduct(${index})">❌</button>
+                `;
+                productList.appendChild(productItem);
+            });
+            totalMrpElem.textContent = totalMrp;
+        }
+
+        function removeProduct(index) {
+            products.splice(index, 1);
+            updateProductList();
+        }
+
+        function updateQuantity(index, newQuantity) {
+            newQuantity = parseInt(newQuantity);
+            if (newQuantity > 0) {
+                products[index].quantity = newQuantity;
+                updateProductList();
+            }
+        }
+
+        function goToNextPage() {
+            window.location.replace("new.html");
+        }
+
+        function startScanner() {
+            scannerActive = true;
+            Quagga.init({
+                inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive') },
+                decoder: { readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"] }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                handleScan(result.codeResult.code);
+            });
+        }
+
+        function stopScanner() {
+            scannerActive = false;
+            Quagga.stop();
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Scanned Products", 10, 10);
+            let yPos = 20;
+            products.forEach(p => {
+                doc.text(`${p.name} - ₹${p.mrp} x ${p.quantity} = ₹${p.mrp * p.quantity}`, 10, yPos);
+                yPos += 10;
+            });
+            doc.text(`Total MRP: ₹${document.getElementById("totalMrp").textContent}`, 10, yPos + 10);
+            doc.save("scanned-products.pdf");
+        }
+
+        function refreshProductList() {
+            products = [];
+            updateProductList();
+        }
+    </script>
+</body>
+</html>
