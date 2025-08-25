@@ -1,7 +1,7 @@
 // server1.js
 
 const express = require("express");
-const mysql = require("mysq");
+const mysql = require("mysql");
 const bodyParser = require("body-parser");
 
 const app = express();
@@ -11,8 +11,8 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: process.env.MYSQLHOST || "localhost",
   user: process.env.MYSQLUSER || "root",
-  password: process.env.MYSQLPASSWORD || "",
-  database: process.env.MYSQLDATABASE || "test",
+  password: process.env.MYSQLPASSWORD || "abhinav 12",
+  database: process.env.MYSQLDATABASE || "barcode_app",
   port: process.env.MYSQLPORT || 3306,
 });
 
