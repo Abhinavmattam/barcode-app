@@ -27,7 +27,7 @@ db.connect((err) => {
 
 // Simple route
 app.get("/", (req, res) => {
-  res.send("Hello! Node.js + MySQL working 🚀");
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // Example API: fetch all users
