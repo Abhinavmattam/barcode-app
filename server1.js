@@ -1,7 +1,7 @@
 // server1.js
 
 const express = require("express");
-const mysql = require("mysql");
+const mysql = require("mysq");
 const bodyParser = require("body-parser");
 
 const app = express();
