@@ -329,7 +329,7 @@
     async function fetchProductDetails(barcode) {
         try {
             console.log("Barcode scanned:", barcode);
-            const response = await fetch(`http://localhost:3002/get-product?barcode=${barcode}`);
+            const response = await fetch(`/get-product?barcode=${code}`);
             const data = await response.json();
             if (data && data.product_name) {
                 document.getElementById("product-name").textContent = "Product: " + data.product_name;
