@@ -1,5 +1,5 @@
 const express = require("express");
-const mysql = require("mysql");
+const mysql = require("mysql2");
 const bodyParser = require("body-parser");
 const path = require("path");
 
@@ -9,13 +9,13 @@ app.use(bodyParser.json());
 // Serve static files (CSS/JS/images) from the current folder
 app.use(express.static(__dirname));
 
-// MySQL connection
+// MySQL connection (Railway details)
 const db = mysql.createConnection({
-  host: process.env.MYSQLHOST || "localhost",
-  user: process.env.MYSQLUSER || "root",
-  password: process.env.MYSQLPASSWORD || "abhinav 12",
-  database: process.env.MYSQLDATABASE || "barcode_app",
-  port: process.env.MYSQLPORT || 3306,
+  host: process.env.MYSQLHOST || "centerbeam.proxy.rlwy.net", // Railway host
+  user: process.env.MYSQLUSER || "root",                      // Railway user
+  password: process.env.MYSQLPASSWORD || "DoiHJGqGlkTSeoiUsHnAyLLUiSrJUeJD",// Railway password
+  database: process.env.MYSQLDATABASE || "railway",           // Railway DB name
+  port: process.env.MYSQLPORT || 26628                        // Railway port
 });
 
 // Connect to MySQL
@@ -24,7 +24,7 @@ db.connect((err) => {
     console.error("❌ Database connection failed: " + err.stack);
     return;
   }
-  console.log("✅ Connected to MySQL database!");
+  console.log("✅ Connected to Railway MySQL database!");
 });
 
 // Serve index.html on root route
@@ -52,6 +52,7 @@ app.post("/users", (req, res) => {
     }
   );
 });
+
 // API: get product by barcode
 app.get("/get-product", (req, res) => {
   const barcode = req.query.barcode;
@@ -60,7 +61,7 @@ app.get("/get-product", (req, res) => {
     return res.json({ product_name: null, mrp: null });
   }
 
-  const query = "SELECT product_name, mrp FROM products WHERE barcode = ?";
+  const query = "SELECT product_name, mrp FROM products WHERE TRIM(barcode) = TRIM(?)";
   db.query(query, [barcode], (err, results) => {
     if (err) return res.status(500).json({ error: err });
 
@@ -75,9 +76,8 @@ app.get("/get-product", (req, res) => {
   });
 });
 
-
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
